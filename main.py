@@ -1,25 +1,33 @@
-"""news-image-20261123 entry: copy the pre-rendered front page to the
-output directory. Python 3.13 standard library only, no network, fully
-deterministic: the same input bytes are written on every run.
+#!/usr/bin/env python3
+"""news-image-20261123 v2 — write the entry image to the output directory.
+
+The image is rendered fresh by the builder and stored next to this file as
+entry.png. This program only copies those exact bytes to
+$MAKEFUN_OUTPUT_DIR/entry.png (or /output/entry.png), so repeated runs are
+byte-identical. Standard library only; no network.
 """
 import os
 import shutil
 import sys
 
-HERE = os.path.dirname(os.path.abspath(__file__))
-SOURCE = os.path.join(HERE, "entry.png")
+SRC = os.path.join(os.path.dirname(os.path.abspath(__file__)), "entry.png")
 
 
-def main() -> int:
+def main():
     out_dir = os.environ.get("MAKEFUN_OUTPUT_DIR", "/output")
     os.makedirs(out_dir, exist_ok=True)
-    dest = os.path.join(out_dir, "entry.png")
-    shutil.copyfile(SOURCE, dest)
-    # Fail loudly instead of handing the gate an empty file.
-    if os.path.getsize(dest) == 0:
-        raise RuntimeError("copied entry.png is empty")
+    dst = os.path.join(out_dir, "entry.png")
+    size = os.path.getsize(SRC)
+    if size == 0:
+        print("entry.png is empty, refusing to copy", file=sys.stderr)
+        return 1
+    shutil.copyfile(SRC, dst)
+    if os.path.getsize(dst) != size:
+        print("copied file size mismatch", file=sys.stderr)
+        return 1
+    print("wrote %s (%d bytes)" % (dst, size))
     return 0
 
 
 if __name__ == "__main__":
-    sys.exit(main())
+    raise SystemExit(main())
